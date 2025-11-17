@@ -18,7 +18,7 @@ Display:
 ```text
 bloodhound/
 ├─ bloodhound.php               # Main plugin file
-├─ readme.txt                   # WordPress.org-style readme (optional)
+├─ README.md                    # Readme
 └─ .github/
    └─ workflows/
       └─ deploy.yml             # GitHub Actions workflow for zero-downtime deploy
