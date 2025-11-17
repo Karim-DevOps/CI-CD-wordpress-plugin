@@ -13,6 +13,53 @@ Display:
 
 ---
 
+## Repository Structure
+
+Hello DevOps/
+├─ hello-devOps.php             # Main plugin file
+├─ readme.txt                   # readme
+└─ .github/
+   └─ workflows/
+      └─ deploy.yml             # `CI/CD pipeline` GitHub Actions workflow for `zero-downtime` deployment
+
+---
+
+## Zero-Downtime
+
+In a traditional “FTP upload” or simple rsync directly into wp-content/plugins/bloodhound:
+
+- Files can change while PHP is executing.
+
+- You might have some files updated and others not yet.
+
+- During that window, the plugin code can be incomplete → fatal errors / broken site.
+
+With this zero-downtime approach:
+
+1. A new release directory is created (e.g. bloodhound-20251117_113500-ghi9abc).
+
+2. All plugin files are rsynced into this new folder.
+
+3. Only when the folder is fully ready, the workflow runs:
+
+ ```bash
+ ln -sfn "$NEW_RELEASE_PATH" "${CURRENT_LINK}"
+ ```
+
+ - ln -sfn updates the symlink atomically.
+
+ - At the filesystem level, the pointer changes almost instantly.
+
+ - If a PHP request starts before the switch, it uses the old code.
+
+ - If it starts after, it uses the new code.
+
+ - No “in-between state”.
+
+This is the core of zero-downtime: all code changes appear at once, and the live path is never half-updated.
+
+---
+
 ## Plugin Details
 
 - **Name:** Hello DevOps  
