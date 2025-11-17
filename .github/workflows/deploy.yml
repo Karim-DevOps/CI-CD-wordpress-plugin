@@ -1,0 +1,90 @@
+name: Publish Hello DevOps Plugin
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+#permissions:
+#  contents: read
+
+env:
+  REMOTE_HOST: example.tn
+  REMOTE_USER: karim
+
+  # Use the exact casing your server uses!
+  RELEASES_DIR: /home/example.tn/releases/plugins/Hello-DevOps-Plugin
+  CURRENT_LINK: /home/example.tn/public_html/wp-content/plugins/Hello-DevOps-Plugin
+
+  KEEP_RELEASES: "3"
+
+jobs:
+  Plugin-deploy:
+    name: 🚀 Zero-Downtime Deploy on Every Commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Get Latest Code
+        uses: actions/checkout@v4
+
+      - name: 🧮 Compute release name
+        run: echo "RELEASE=Hello-DevOps-$(date +%Y%m%d_%H%M%S)-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: 🔐 Prepare SSH (known_hosts)
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ env.REMOTE_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: 📂 Ensure release dirs exist (remote)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          key: ${{ secrets.SOGEINFO_KEY }}
+          script: |
+            set -euo pipefail
+            mkdir -p "${{ env.RELEASES_DIR }}"
+            mkdir -p "$(dirname "${{ env.CURRENT_LINK }}")"
+
+      - name: 🚀 Rsync code to new release
+        uses: burnett01/rsync-deployments@6.0.0
+        with:
+          switches: -avzr --delete --exclude '.git*' --exclude '.github' --exclude 'node_modules' --exclude '*.log'
+          path: .
+          remote_path: ${{ env.RELEASES_DIR }}/${{ env.RELEASE }}
+          remote_host: ${{ env.REMOTE_HOST }}
+          remote_user: ${{ env.REMOTE_USER }}
+          remote_key: ${{ secrets.SOGEINFO_KEY }}
+
+      - name: 🔁 Atomically switch symlink to new release
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          key: ${{ secrets.SOGEINFO_KEY }}
+          script: |
+            set -euo pipefail
+            NEW_RELEASE_PATH="${{ env.RELEASES_DIR }}/${{ env.RELEASE }}"
+
+            # If CURRENT_LINK is exist (first run), back it up before switching
+            if [ ! -L "${{ env.CURRENT_LINK }}" ] && [ -d "${{ env.CURRENT_LINK }}" ]; then
+              mv "${{ env.CURRENT_LINK }}" "${{ env.RELEASES_DIR }}/backup-$(date +%Y%m%d%H%M%S)"
+            fi
+
+            # Atomic flip of the symlink
+            ln -sfn "$NEW_RELEASE_PATH" "${{ env.CURRENT_LINK }}"
+
+      - name: 🧹 Prune old releases (keep last N Releases)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          key: ${{ secrets.SOGEINFO_KEY }}
+          script: |
+            set -euo pipefail
+            cd "${{ env.RELEASES_DIR }}"
+            # Keep newest $KEEP_RELEASES, delete the rest
+            ls -1dt */ 2>/dev/null | tail -n +$(( ${{ env.KEEP_RELEASES }} + 1 )) | xargs -r rm -rf --
