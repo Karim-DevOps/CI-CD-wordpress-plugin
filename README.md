@@ -26,7 +26,7 @@ bloodhound/
 
 ---
 
-### Why This Avoids Downtime
+## Why This Avoids Downtime
 
 In a traditional “FTP upload” or simple `rsync` directly into `wp-content/plugins/bloodhound`:
 
@@ -42,7 +42,7 @@ With this zero-downtime approach:
 
    ```bash
    ln -sfn "$NEW_RELEASE_PATH" "${CURRENT_LINK}"
-````
+   ````
 
    * `ln -sfn` updates the symlink **atomically**.
    * At the filesystem level, the pointer changes almost instantly.
