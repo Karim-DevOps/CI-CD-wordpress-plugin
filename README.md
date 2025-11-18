@@ -16,8 +16,8 @@ Display:
 ## Repository Structure
 
 ```text
-bloodhound/
-├─ bloodhound.php               # Main plugin file
+Hello-DevOps/
+├─ hello-devops.php             # Main plugin file
 ├─ README.md                    # Readme
 └─ .github/
    └─ workflows/
@@ -28,7 +28,7 @@ bloodhound/
 
 ## Why This Avoids Downtime
 
-In a traditional “FTP upload” or simple `rsync` directly into `wp-content/plugins/bloodhound`:
+In a traditional “FTP upload” or simple `rsync` directly into `wp-content/plugins/Hello-DevOps`:
 
 - Files can change while PHP is executing.
 - You might have some files updated and others not yet.
@@ -77,7 +77,7 @@ This is the core of **zero-downtime**: all code changes appear at once, and the 
 
 ### 1. Activate the Plugin
 
-1. Copy the plugin folder `Hello DevOps` to:
+1. Copy the plugin folder `Hello-DevOps` to:
 
    ```text
    wp-content/plugins/Hello-DevOps
